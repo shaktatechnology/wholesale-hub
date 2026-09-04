@@ -2,6 +2,8 @@
 import { useState, useRef, useEffect } from "react";
 import { createProduct, updateProduct } from "../../actions/product";
 import { compressImage } from "@/app/lib/compressImage";
+import { useToast } from "@/app/components/Toast";
+import { TikTokIcon, FacebookIcon, InstagramIcon } from "@/app/components/SocialIcons";
 
 type Color = {
     id: number;
@@ -25,6 +27,9 @@ type Product = {
     stock: number;
     status: boolean;
     description: string;
+    tiktokUrl?: string | null;
+    facebookUrl?: string | null;
+    instagramUrl?: string | null;
     productColors?: {
         id: number;
         productId: number;
@@ -57,6 +62,7 @@ type Props = {
 };
 
 export default function ProductFormModal({ isOpen, onClose, onSaved, product, colors, sizes }: Props) {
+    const { toast } = useToast();
     const [form, setForm] = useState({
         name: "",
         slug: "",
@@ -65,6 +71,9 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
         discount: "",
         stock: "",
         status: true,
+        tiktokUrl: "",
+        facebookUrl: "",
+        instagramUrl: "",
     });
 
     const [selectedColorIds, setSelectedColorIds] = useState<number[]>([]);
@@ -76,6 +85,32 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const nameRef = useRef<HTMLTextAreaElement>(null);
+    const slugRef = useRef<HTMLTextAreaElement>(null);
+    const descriptionRef = useRef<HTMLTextAreaElement>(null);
+
+    // Auto-expand Name, Slug, and Description textarea height as content grows
+    useEffect(() => {
+        if (nameRef.current) {
+            nameRef.current.style.height = "auto";
+            nameRef.current.style.height = `${Math.max(38, nameRef.current.scrollHeight)}px`;
+        }
+    }, [form.name, isOpen]);
+
+    useEffect(() => {
+        if (slugRef.current) {
+            slugRef.current.style.height = "auto";
+            slugRef.current.style.height = `${Math.max(38, slugRef.current.scrollHeight)}px`;
+        }
+    }, [form.slug, isOpen]);
+
+    useEffect(() => {
+        if (descriptionRef.current) {
+            descriptionRef.current.style.height = "auto";
+            descriptionRef.current.style.height = `${Math.max(80, descriptionRef.current.scrollHeight)}px`;
+        }
+    }, [form.description, isOpen]);
 
     // Reset or load product on open/change
     useEffect(() => {
@@ -93,6 +128,9 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                     discount: String(product.discount || 0),
                     stock: String(product.stock),
                     status: product.status,
+                    tiktokUrl: product.tiktokUrl || "",
+                    facebookUrl: product.facebookUrl || "",
+                    instagramUrl: product.instagramUrl || "",
                 });
 
                 // Load images
@@ -131,6 +169,9 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                     discount: "0",
                     stock: "",
                     status: true,
+                    tiktokUrl: "",
+                    facebookUrl: "",
+                    instagramUrl: "",
                 });
                 setImagesList([]);
                 setSelectedColorIds([]);
@@ -151,74 +192,49 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
         }));
     }
 
-    function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
+    function handleNameChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
         const name = e.target.value;
-        if (!product) {
-            const slug = name
-                .toLowerCase()
-                .replace(/\s+/g, "-")
-                .replace(/[^a-z0-9-]/g, "");
-            setForm((prev) => ({ ...prev, name, slug }));
-        } else {
-            setForm((prev) => ({ ...prev, name }));
-        }
+        const slug = name
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .trim()
+            .replace(/\s+/g, "-");
+        setForm((prev) => ({ ...prev, name, slug }));
     }
 
-    function handleFilesSelected(files: FileList | File[]) {
-        const fileArray = Array.from(files);
-        if (fileArray.length === 0) return;
-        setUploadError("");
-
-        const newItems: ImageItem[] = [];
-        for (const file of fileArray) {
-            if (!file.type.startsWith("image/")) {
-                setUploadError("Only image files are allowed.");
-                continue;
-            }
-            if (file.size > 20 * 1024 * 1024) {
-                setUploadError("Image must be under 20 MB.");
-                continue;
-            }
-            newItems.push({
-                id: Math.random().toString(36).slice(2, 9),
-                file,
-                preview: URL.createObjectURL(file),
-                isCover: false,
-            });
-        }
-
-        setImagesList((prev) => {
-            const updated = [...prev, ...newItems];
-            if (updated.length > 0 && !updated.some((img) => img.isCover)) {
-                updated[0].isCover = true;
-            }
-            return updated;
-        });
-    }
-
-    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            handleFilesSelected(e.target.files);
+            addFilesToList(Array.from(e.target.files));
         }
-    }
+    };
 
-    function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         if (e.dataTransfer.files) {
-            handleFilesSelected(e.dataTransfer.files);
+            addFilesToList(Array.from(e.dataTransfer.files));
         }
-    }
+    };
 
-    function handleSetCover(id: string) {
-        setImagesList((prev) =>
-            prev.map((item) => ({
-                ...item,
-                isCover: item.id === id,
-            }))
-        );
-    }
+    const addFilesToList = (files: File[]) => {
+        const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+        if (imageFiles.length === 0) {
+            toast("Only image files are allowed.", "error");
+            setUploadError("Only image files are allowed.");
+            return;
+        }
 
-    function handleRemoveImage(id: string) {
+        const newItems: ImageItem[] = imageFiles.map((file, idx) => ({
+            id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${idx}`,
+            file,
+            preview: URL.createObjectURL(file),
+            isCover: imagesList.length === 0 && idx === 0,
+        }));
+
+        setImagesList((prev) => [...prev, ...newItems]);
+        setUploadError("");
+    };
+
+    const handleRemoveImage = (id: string) => {
         setImagesList((prev) => {
             const filtered = prev.filter((item) => item.id !== id);
             if (filtered.length > 0 && !filtered.some((item) => item.isCover)) {
@@ -226,18 +242,33 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
             }
             return filtered;
         });
-    }
+    };
+
+    const handleSetCover = (id: string) => {
+        setImagesList((prev) =>
+            prev.map((item) => ({
+                ...item,
+                isCover: item.id === id,
+            }))
+        );
+    };
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        setError("");
-        setUploadError("");
-
-        if (imagesList.length === 0) {
-            setUploadError("Please upload at least one product image.");
+        if (!form.name || !form.slug || !form.price || !form.stock) {
+            toast("Please fill in all required fields.", "error");
+            setError("Please fill in all required fields.");
             return;
         }
 
+        if (imagesList.length === 0) {
+            toast("Please select at least one image.", "error");
+            setError("Please select at least one image.");
+            return;
+        }
+
+        setError("");
+        setUploadError("");
         setLoading(true);
 
         try {
@@ -252,7 +283,9 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                     const uploadData = await uploadRes.json();
 
                     if (!uploadRes.ok || !uploadData.url) {
-                        setUploadError(uploadData.error ?? "Image upload failed.");
+                        const msg = uploadData.error ?? "Image upload failed.";
+                        toast(msg, "error");
+                        setUploadError(msg);
                         setLoading(false);
                         return;
                     }
@@ -275,6 +308,9 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                 status: form.status,
                 image: coverUrl,
                 images: uploadedUrls,
+                tiktokUrl: form.tiktokUrl.trim() || null,
+                facebookUrl: form.facebookUrl.trim() || null,
+                instagramUrl: form.instagramUrl.trim() || null,
                 colorIds: selectedColorIds,
                 sizeIds: selectedSizeIds,
             };
@@ -293,7 +329,9 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
             onSaved(savedProduct as any, !!product);
         } catch (err: any) {
             console.error("Error saving product:", err);
-            setError(err?.message || `Failed to ${product ? "update" : "create"} product. Make sure the slug is unique.`);
+            const msg = err?.message || `Failed to ${product ? "update" : "create"} product.`;
+            toast(msg, "error");
+            setError(msg);
         }
 
         setLoading(false);
@@ -314,11 +352,24 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                     </svg>
                 </button>
 
-                <h2 className="text-xl font-semibold mb-6">
-                    {product ? "Edit Product" : "Add New Product"}
-                </h2>
-
-                {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+                {error && (
+                    <div className="p-3.5 mb-5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 animate-fadeIn">
+                        <svg className="w-5 h-5 text-red-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div className="flex-1 text-xs text-red-700 font-semibold leading-relaxed">
+                            {error}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setError("")}
+                            className="text-red-400 hover:text-red-600 text-xs font-bold leading-none p-0.5 rounded cursor-pointer"
+                            title="Dismiss message"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Name */}
@@ -327,13 +378,25 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                             <label className="text-xs text-gray-500 block">Name</label>
                             <span className="text-[10px] text-gray-400">{form.name.length} / 100</span>
                         </div>
-                        <input
+                        <textarea
+                            ref={nameRef}
                             required
                             name="name"
+                            rows={1}
                             maxLength={100}
                             value={form.name}
-                            onChange={handleNameChange}
-                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black"
+                            onChange={(e) => {
+                                handleNameChange(e);
+                                if (e.target.value.includes("\n")) {
+                                    setForm((prev) => ({ ...prev, name: prev.name.replace(/\n/g, "") }));
+                                }
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                }
+                            }}
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black resize-none overflow-hidden transition-[height] duration-100"
                         />
                     </div>
 
@@ -343,13 +406,23 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                             <label className="text-xs text-gray-500 block">Slug</label>
                             <span className="text-[10px] text-gray-400">{form.slug.length} / 100</span>
                         </div>
-                        <input
+                        <textarea
+                            ref={slugRef}
                             required
                             name="slug"
+                            rows={1}
                             maxLength={100}
                             value={form.slug}
-                            onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
-                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black"
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/\n/g, "");
+                                setForm((p) => ({ ...p, slug: val }));
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                }
+                            }}
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black resize-none overflow-hidden transition-[height] duration-100"
                         />
                     </div>
 
@@ -360,13 +433,14 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                             <span className="text-[10px] text-gray-400">{form.description.length} / 1000</span>
                         </div>
                         <textarea
+                            ref={descriptionRef}
                             required
                             name="description"
                             maxLength={1000}
                             value={form.description}
                             onChange={handleChange}
                             rows={3}
-                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black resize-none"
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black resize-none overflow-hidden transition-[height] duration-100"
                         />
                     </div>
 
@@ -507,6 +581,57 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                             {sizes.length === 0 && (
                                 <p className="text-xs text-gray-400">No sizes configured yet. Create some in the Sizes dashboard.</p>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Social Media Video Links */}
+                    <div className="sm:col-span-2 p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                        <label className="text-xs font-semibold text-gray-800 block">
+                            Product Video Links <span className="text-gray-400 font-normal">(Optional video URLs for TikTok, Facebook & Instagram)</span>
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                    <TikTokIcon className="w-3.5 h-3.5 text-black" />
+                                    <span className="text-[11px] font-medium text-gray-600">TikTok Link</span>
+                                </div>
+                                <input
+                                    type="url"
+                                    name="tiktokUrl"
+                                    value={form.tiktokUrl}
+                                    onChange={handleChange}
+                                    placeholder="https://www.tiktok.com/@..."
+                                    className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-black bg-white"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                    <FacebookIcon className="w-3.5 h-3.5 text-blue-600" />
+                                    <span className="text-[11px] font-medium text-gray-600">Facebook Link</span>
+                                </div>
+                                <input
+                                    type="url"
+                                    name="facebookUrl"
+                                    value={form.facebookUrl}
+                                    onChange={handleChange}
+                                    placeholder="https://facebook.com/..."
+                                    className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-black bg-white"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                    <InstagramIcon className="w-3.5 h-3.5 text-pink-600" />
+                                    <span className="text-[11px] font-medium text-gray-600">Instagram Reel Link</span>
+                                </div>
+                                <input
+                                    type="url"
+                                    name="instagramUrl"
+                                    value={form.instagramUrl}
+                                    onChange={handleChange}
+                                    placeholder="https://instagram.com/reel/..."
+                                    className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-black bg-white"
+                                />
+                            </div>
                         </div>
                     </div>
 

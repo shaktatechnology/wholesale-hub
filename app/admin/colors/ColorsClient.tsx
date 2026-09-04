@@ -1,10 +1,12 @@
 "use client";
 import { useState, useTransition } from "react";
 import { createColor, deleteColor, updateColor, createNumberColors } from "../../actions/color";
+import { useToast } from "@/app/components/Toast";
 
 type Color = { id: number; name: string; hexCode: string };
 
 export default function ColorsClient({ initialColors }: { initialColors: Color[] }) {
+    const { toast } = useToast();
     const [colors, setColors] = useState(initialColors);
     const [name, setName] = useState("");
     const [hexCode, setHexCode] = useState("#000000");
@@ -19,9 +21,11 @@ export default function ColorsClient({ initialColors }: { initialColors: Color[]
             const added = await createNumberColors(1, 10);
             if (added.length > 0) {
                 setColors((prev) => [...added, ...prev]);
+                toast("Numbers 1-10 created successfully!", "success");
             }
         } catch (err) {
             console.error("Failed to generate number options:", err);
+            toast("Failed to generate number options.", "error");
         } finally {
             setGeneratingNumbers(false);
         }
@@ -38,15 +42,17 @@ export default function ColorsClient({ initialColors }: { initialColors: Color[]
                     prev.map((c) => (c.id === editingColor.id ? updated : c))
                 );
                 setEditingColor(null);
+                toast("Color updated successfully!", "success");
             } else {
                 const newColor = await createColor({ name, hexCode });
                 setColors((prev) => [newColor, ...prev]);
+                toast("Color created successfully!", "success");
             }
             setName("");
             setHexCode("#000000");
         } catch (err) {
             console.error("Failed to save color:", err);
-            alert("Error saving color. Please try again.");
+            toast("Error saving color. Please try again.", "error");
         } finally {
             setLoading(false);
         }
@@ -69,6 +75,7 @@ export default function ColorsClient({ initialColors }: { initialColors: Color[]
         startTransition(async () => {
             await deleteColor(id);
             setColors((prev) => prev.filter((c) => c.id !== id));
+            toast("Color deleted successfully!", "info");
             if (editingColor?.id === id) {
                 handleCancel();
             }

@@ -35,6 +35,9 @@ model Product {
   status        Boolean        @default(true)
   image         String
   images        String?        @db.Text
+  tiktokUrl     String?        @db.Text
+  facebookUrl   String?        @db.Text
+  instagramUrl  String?        @db.Text
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   productColors ProductColor[]
@@ -119,22 +122,26 @@ model OrderItem {
 }
 
 model Setting {
-  id             Int      @id @default(autoincrement())
-  siteName       String
-  email          String
-  phone          String
-  address        String
-  shippingCharge Decimal  @db.Decimal(10, 2) @default(0)
-  advancePayment Decimal  @db.Decimal(10, 2) @default(0)
-  logo           String?
-  favicon        String?
-  facebook       String?
-  instagram      String?
-  twitter        String?
-  qrImage        String?
-  whatsapp       String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  siteName              String
+  email                 String
+  phone                 String
+  address               String
+  shippingCharge        Decimal  @db.Decimal(10, 2) @default(0)
+  advancePayment        Decimal  @db.Decimal(10, 2) @default(0)
+  logo                  String?
+  favicon               String?
+  facebook              String?
+  instagram             String?
+  tiktok                String?
+  showSocialVideoLinks  Boolean  @default(true)
+  enableLowStockAlert   Boolean  @default(true)
+  lowStockThreshold     Int      @default(5)
+  allowOutOfStockOrders Boolean  @default(false)
+  qrImage               String?
+  whatsapp              String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model HomepageSetting {

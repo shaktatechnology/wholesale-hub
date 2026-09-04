@@ -2,6 +2,7 @@
 import { useState, useEffect, useTransition, useRef } from "react";
 import OrderStatusSelect from "./OrderStatusSelect";
 import { deleteOrder } from "../../actions/order";
+import { useToast } from "@/app/components/Toast";
 
 type OrderItem = {
   id: number;
@@ -51,6 +52,7 @@ type Props = {
 };
 
 export default function OrdersClient({ orders }: Props) {
+  const { toast } = useToast();
   const [ordersList, setOrdersList] = useState(orders);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -181,6 +183,7 @@ export default function OrdersClient({ orders }: Props) {
   function copyPhone(orderId: number, phone: string) {
     navigator.clipboard.writeText(phone).then(() => {
       setCopiedPhone(orderId);
+      toast("Phone number copied to clipboard!", "info");
       setTimeout(() => setCopiedPhone(null), 2000);
     });
   }
@@ -191,9 +194,10 @@ export default function OrdersClient({ orders }: Props) {
       try {
         await deleteOrder(id);
         setOrdersList((prev) => prev.filter((o) => o.id !== id));
+        toast("Order deleted successfully!", "info");
       } catch (error) {
         console.error("Failed to delete order:", error);
-        alert("Failed to delete the order. Please try again.");
+        toast("Failed to delete order. Please try again.", "error");
       }
     });
   }

@@ -8,11 +8,15 @@ type Product = {
     name: string;
     slug: string;
     image: string;
+    images?: string | null;
     price: unknown;
     discount: unknown;
     stock: number;
     status: boolean;
     description: string;
+    tiktokUrl?: string | null;
+    facebookUrl?: string | null;
+    instagramUrl?: string | null;
 };
 
 type Color = {
@@ -26,6 +30,8 @@ type Size = {
     name: string;
 };
 
+import { useToast } from "@/app/components/Toast";
+
 export default function ProductsClient({
     initialProducts,
     colors,
@@ -35,6 +41,7 @@ export default function ProductsClient({
     colors: Color[];
     sizes: Size[];
 }) {
+    const { toast } = useToast();
     const [products, setProducts] = useState(initialProducts);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -47,6 +54,7 @@ export default function ProductsClient({
 
     function handleDelete(id: number) {
         setProducts((prev) => prev.filter((p) => p.id !== id));
+        toast("Product deleted successfully!", "info");
     }
 
     function handleSaved(savedProduct: Product, isEdit: boolean) {
@@ -54,8 +62,10 @@ export default function ProductsClient({
             setProducts((prev) =>
                 prev.map((p) => (p.id === savedProduct.id ? savedProduct : p))
             );
+            toast("Product updated successfully!", "success");
         } else {
             setProducts((prev) => [savedProduct, ...prev]);
+            toast("Product created successfully!", "success");
         }
         setIsFormOpen(false);
         setEditingProduct(null);

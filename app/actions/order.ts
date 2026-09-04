@@ -5,6 +5,8 @@ import { prisma } from "../lib/prisma";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
 import { checkRateLimit, getClientIp } from "../lib/rateLimit";
+import { serialize } from "../lib/serialize";
+
 
 type PlaceOrderInput = {
     customerName: string;
@@ -185,37 +187,73 @@ export async function placeOrder(data: PlaceOrderInput) {
         return { success: false, message: `Too many order attempts. Please try again in ${reset} seconds.` };
     }
 
+    // Fetch site settings and product stock before placing order
+    const [setting, product] = await Promise.all([
+        prisma.setting.findFirst(),
+        prisma.product.findUnique({
+            where: { id: data.productId },
+            select: { stock: true, name: true }
+        }),
+    ]);
+
+    const allowOutOfStockOrders = setting?.allowOutOfStockOrders ?? false;
+
+    if (!product) {
+        return { success: false, message: "Product not found." };
+    }
+
+    if (!allowOutOfStockOrders) {
+        if (product.stock <= 0) {
+            return { success: false, message: "Sorry, this product is currently out of stock." };
+        }
+
+        if (product.stock < data.quantity) {
+            return { success: false, message: `Only ${product.stock} unit(s) left in stock.` };
+        }
+    }
+
     const subtotal = data.price * data.quantity;
     const total = subtotal + data.shippingCharge;
 
     // Generate a random order number like ORD-20240630-4821
     const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 9000) + 1000}`;
 
-    const order = await prisma.order.create({
-        data: {
-            orderNumber,
-            customerName: data.customerName,
-            phone: data.phone,
-            address: data.address,
-            subtotal,
-            shippingCharge: data.shippingCharge,
-            total,
-            paymentMethod: data.paymentMethod,
-            advancePaid: data.advancePaid,
-            paymentProof: data.paymentProof,
-            status: "pending",
-            orderItems: {
-                create: {
-                    productId: data.productId,
-                    colorId: data.colorId,
-                    sizeId: data.sizeId,
-                    quantity: data.quantity,
-                    price: data.price,
-                    total: subtotal,
+    // Create order and decrement product stock (if available) atomically
+    const [order] = await prisma.$transaction([
+        prisma.order.create({
+            data: {
+                orderNumber,
+                customerName: data.customerName,
+                phone: data.phone,
+                address: data.address,
+                subtotal,
+                shippingCharge: data.shippingCharge,
+                total,
+                paymentMethod: data.paymentMethod,
+                advancePaid: data.advancePaid,
+                paymentProof: data.paymentProof,
+                status: "pending",
+                orderItems: {
+                    create: {
+                        productId: data.productId,
+                        colorId: data.colorId,
+                        sizeId: data.sizeId,
+                        quantity: data.quantity,
+                        price: data.price,
+                        total: subtotal,
+                    },
                 },
             },
-        },
-    });
+        }),
+        ...(product.stock > 0
+            ? [
+                  prisma.product.update({
+                      where: { id: data.productId },
+                      data: { stock: { decrement: Math.min(product.stock, data.quantity) } },
+                  }),
+              ]
+            : []),
+    ]);
 
     sendTelegramNotification(order.id);
 
@@ -223,7 +261,7 @@ export async function placeOrder(data: PlaceOrderInput) {
 }
 
 export async function getOrders() {
-    return prisma.order.findMany({
+    const orders = await prisma.order.findMany({
         orderBy: { createdAt: "desc" },
         include: {
             orderItems: {
@@ -235,13 +273,16 @@ export async function getOrders() {
             },
         },
     });
+    return serialize(orders);
 }
 
 export async function updateOrderStatus(id: number, status: string) {
-    return prisma.order.update({ where: { id }, data: { status } });
+    const order = await prisma.order.update({ where: { id }, data: { status } });
+    return serialize(order);
 }
 
 export async function deleteOrder(id: number) {
     return prisma.order.delete({ where: { id } });
 }
+
 

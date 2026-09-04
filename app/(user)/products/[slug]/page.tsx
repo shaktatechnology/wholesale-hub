@@ -6,8 +6,8 @@ import Footer from "../../../components/Footer";
 import { getProductBySlug } from "../../../actions/product";
 import { getSettings } from "../../../actions/settings";
 import OrderForm from "./OrderForm";
-
 import ProductImageGallery from "./ProductImageGallery";
+import { TikTokIcon, FacebookIcon, InstagramIcon } from "../../../components/SocialIcons";
 
 type Props = {
     params: Promise<{ slug: string }>;
@@ -63,6 +63,12 @@ export default async function ProductDetailPage({ params }: Props) {
     const sizes = product.productSizes.map((ps) => ps.size);
     const shippingCharge = Number(settings?.shippingCharge ?? 0);
     const advancePayment = Number(settings?.advancePayment ?? 300);
+    const enableLowStockAlert = settings?.enableLowStockAlert ?? true;
+    const lowStockThreshold = Number(settings?.lowStockThreshold ?? 5);
+    const allowOutOfStockOrders = settings?.allowOutOfStockOrders ?? false;
+
+    const isLowStock = enableLowStockAlert && product.stock > 0 && product.stock <= lowStockThreshold;
+    const isOutOfStock = product.stock <= 0;
     const qrImage = settings?.qrImage ?? null;
     const whatsappNumber = settings?.whatsapp ?? null;
 
@@ -94,25 +100,40 @@ export default async function ProductDetailPage({ params }: Props) {
                         {/* Star Rating */}
                         <Stars rating={4} count={103} />
 
-                        {/* Price */}
-                        <div className="flex items-baseline gap-2">
-                            {Number(product.discount) > 0 ? (
-                                <>
+                        {/* Price & Availability */}
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-baseline gap-2">
+                                {Number(product.discount) > 0 ? (
+                                    <>
+                                        <span className="text-2xl font-bold text-gray-900">
+                                            Rs. {(Number(product.price) - Number(product.discount)).toLocaleString()}
+                                        </span>
+                                        <span className="text-sm text-gray-400 line-through">
+                                            Rs. {Number(product.price).toLocaleString()}
+                                        </span>
+                                        <span className="text-xs text-red-500 font-semibold bg-red-50 px-2 py-0.5 rounded-full">
+                                            Rs. {Number(product.discount).toLocaleString()} OFF
+                                        </span>
+                                    </>
+                                ) : (
                                     <span className="text-2xl font-bold text-gray-900">
-                                        Rs. {(Number(product.price) - Number(product.discount)).toLocaleString()}
-                                    </span>
-                                    <span className="text-sm text-gray-405 line-through">
                                         Rs. {Number(product.price).toLocaleString()}
                                     </span>
-                                    <span className="text-xs text-red-500 font-semibold bg-red-50 px-2 py-0.5 rounded-full ml-1">
-                                        Rs. {Number(product.discount).toLocaleString()} OFF
-                                    </span>
-                                </>
-                            ) : (
-                                <span className="text-2xl font-bold text-gray-900">
-                                    Rs. {Number(product.price).toLocaleString()}
+                                )}
+                            </div>
+
+                            {/* Stock Badge: Hide normal 'In Stock', only show Low Stock warning or Out of Stock */}
+                            {isLowStock ? (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                                    Low Stock ({product.stock} left!)
                                 </span>
-                            )}
+                            ) : isOutOfStock ? (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-red-50 text-red-600 px-2.5 py-1 rounded-full border border-red-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    {allowOutOfStockOrders ? "Out of Stock (Ordering Allowed)" : "Out of Stock"}
+                                </span>
+                            ) : null}
                         </div>
 
                         {/* Description */}
@@ -120,12 +141,58 @@ export default async function ProductDetailPage({ params }: Props) {
                             {product.description}
                         </p>
 
+                        {/* Social Video Watch Links */}
+                        {(product.tiktokUrl || product.facebookUrl || product.instagramUrl) && (
+                            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-2.5">
+                                <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                    Watch Product Videos
+                                </p>
+                                <div className="flex items-center justify-start gap-2.5 flex-wrap">
+                                    {product.tiktokUrl && (
+                                        <a
+                                            href={product.tiktokUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 bg-black text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-gray-800 transition shadow-xs"
+                                        >
+                                            <TikTokIcon className="w-4 h-4 text-white shrink-0" />
+                                            TikTok
+                                        </a>
+                                    )}
+                                    {product.facebookUrl && (
+                                        <a
+                                            href={product.facebookUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 bg-[#1877F2] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700 transition shadow-xs"
+                                        >
+                                            <FacebookIcon className="w-4 h-4 text-white shrink-0" />
+                                            Facebook
+                                        </a>
+                                    )}
+                                    {product.instagramUrl && (
+                                        <a
+                                            href={product.instagramUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:opacity-90 transition shadow-xs"
+                                        >
+                                            <InstagramIcon className="w-4 h-4 text-white shrink-0" />
+                                            Instagram
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Order Form */}
                         <OrderForm
                             productId={product.id}
                             price={Number(product.price) - Number(product.discount ?? 0)}
                             shippingCharge={shippingCharge}
                             advancePayment={advancePayment}
+                            stock={product.stock}
+                            allowOutOfStockOrders={allowOutOfStockOrders}
                             colors={colors}
                             sizes={sizes}
                             qrImage={qrImage}

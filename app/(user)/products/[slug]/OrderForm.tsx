@@ -11,6 +11,8 @@ type Props = {
     price: number;
     shippingCharge: number;
     advancePayment?: number;
+    stock?: number;
+    allowOutOfStockOrders?: boolean;
     colors: Color[];
     sizes: Size[];
     qrImage: string | null;
@@ -24,6 +26,8 @@ export default function OrderForm({
     price,
     shippingCharge,
     advancePayment = 300,
+    stock,
+    allowOutOfStockOrders = false,
     colors,
     sizes,
     qrImage,
@@ -310,6 +314,22 @@ Please confirm my order. Thank you!`;
         setValidationError(null);
     }
 
+    if (stock !== undefined && stock <= 0 && !allowOutOfStockOrders) {
+        return (
+            <div className="border border-red-200 rounded-2xl p-6 bg-red-50/50 text-center space-y-3 shadow-xs">
+                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto text-xl font-bold">
+                    ✕
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Currently Out of Stock</h3>
+                <p className="text-xs text-gray-600 max-w-sm mx-auto leading-relaxed">
+                    This item is currently sold out. Please check back later!
+                </p>
+            </div>
+        );
+    }
+
+    const maxQty = stock !== undefined && stock > 0 ? stock : undefined;
+
     return (
         <div className="flex flex-col gap-6">
             {/* Available Colors / Numbers (Interactive) */}
@@ -407,40 +427,24 @@ Please confirm my order. Thank you!`;
                         <input
                             type="number"
                             min="1"
+                            max={maxQty}
                             value={quantity}
                             onChange={(e) => {
                                 const val = parseInt(e.target.value, 10);
-                                setQuantity(isNaN(val) || val < 1 ? 1 : val);
+                                const clamped = isNaN(val) || val < 1 ? 1 : val;
+                                setQuantity(maxQty ? Math.min(maxQty, clamped) : clamped);
                             }}
                             className="w-14 text-center text-sm font-bold text-gray-900 outline-none border-x border-gray-200 py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                         <button
                             type="button"
-                            onClick={() => setQuantity(quantity + 1)}
+                            onClick={() => setQuantity(maxQty ? Math.min(maxQty, quantity + 1) : quantity + 1)}
                             className="w-10 h-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition text-lg font-bold cursor-pointer select-none"
                             title="Increase quantity"
                         >
                             +
                         </button>
                     </div>
-
-                    {/* Quick Preset Buttons */}
-                    {/* <div className="flex items-center gap-1.5 flex-wrap">
-                        {[1, 2, 5, 10, 20, 50].map((num) => (
-                            <button
-                                key={num}
-                                type="button"
-                                onClick={() => setQuantity(num)}
-                                className={`px-3 py-2 rounded-xl text-xs font-bold border transition cursor-pointer select-none ${
-                                    quantity === num
-                                        ? "border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-100"
-                                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                                }`}
-                            >
-                                {num} Pcs
-                            </button>
-                        ))}
-                    </div> */}
                 </div>
             </div>
 
@@ -888,7 +892,7 @@ Please confirm my order. Thank you!`;
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <span className="text-emerald-650 font-bold">✓</span>
-                                    <span>Only Rs. 300 Per Piece</span>
+                                    <span>Only Rs. {advancePayment} Per Piece</span>
                                 </li>
                             </ul>
                         </div>

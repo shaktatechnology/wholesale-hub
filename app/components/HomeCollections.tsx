@@ -10,13 +10,18 @@ type Product = {
     image: string;
     price: any;
     discount?: any;
+    stock: number;
+    tiktokUrl?: string | null;
+    facebookUrl?: string | null;
+    instagramUrl?: string | null;
 };
 
 type Props = {
     products: Product[];
+    showSocialVideoLinks?: boolean;
 };
 
-export default function HomeCollections({ products }: Props) {
+export default function HomeCollections({ products, showSocialVideoLinks = true }: Props) {
     const [searchQuery, setSearchQuery] = useState("");
 
     const filteredProducts = useMemo(() => {
@@ -79,11 +84,17 @@ export default function HomeCollections({ products }: Props) {
                             image={product.image}
                             price={product.price.toString()}
                             discount={product.discount?.toString() ?? "0"}
+                            stock={product.stock}
+                            tiktokUrl={product.tiktokUrl}
+                            facebookUrl={product.facebookUrl}
+                            instagramUrl={product.instagramUrl}
+                            showSocialVideoLinks={showSocialVideoLinks}
                             rating={i % 3 === 1 ? 5 : 4}
                             reviewCount={100 + i * 10 + 2}
                         />
                     ))}
                 </div>
+
             ) : (
                 <div className="text-center py-16 border border-dashed border-gray-200 rounded-xl bg-gray-50/50">
                     <p className="text-gray-500 text-sm mb-3">

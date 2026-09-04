@@ -2,17 +2,19 @@
 // Fetches products for the homepage grid and a single product by slug
 
 import { prisma } from "../lib/prisma";
+import { serialize } from "../lib/serialize";
 
 export async function getProducts() {
-    return prisma.product.findMany({
+    const products = await prisma.product.findMany({
         where: { status: true },
         orderBy: { createdAt: "desc" },
     });
+    return serialize(products);
 }
 
 export async function getProductBySlug(slug: string) {
     const decodedSlug = decodeURIComponent(slug);
-    return prisma.product.findUnique({
+    const product = await prisma.product.findUnique({
         where: { slug: decodedSlug },
         include: {
             productColors: {
@@ -23,10 +25,11 @@ export async function getProductBySlug(slug: string) {
             },
         },
     });
+    return serialize(product);
 }
 
 export async function getAllProducts() {
-    return prisma.product.findMany({
+    const products = await prisma.product.findMany({
         orderBy: { createdAt: "desc" },
         include: {
             productColors: {
@@ -37,6 +40,33 @@ export async function getAllProducts() {
             },
         },
     });
+    return serialize(products);
+}
+
+// Helper function to generate a guaranteed unique slug
+async function generateUniqueSlug(baseSlug: string, currentProductId?: number): Promise<string> {
+    let slug = baseSlug
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+
+    if (!slug) slug = "product";
+
+    let candidate = slug;
+    let count = 1;
+
+    while (true) {
+        const existing = await prisma.product.findFirst({
+            where: {
+                slug: candidate,
+                NOT: currentProductId ? { id: currentProductId } : undefined,
+            },
+        });
+        if (!existing) return candidate;
+        candidate = `${slug}-${count}`;
+        count++;
+    }
 }
 
 export async function createProduct(data: {
@@ -49,14 +79,20 @@ export async function createProduct(data: {
     status: boolean;
     image: string;
     images?: string[];
+    tiktokUrl?: string | null;
+    facebookUrl?: string | null;
+    instagramUrl?: string | null;
     colorIds?: number[];
     sizeIds?: number[];
 }) {
-    const { colorIds, sizeIds, images, ...productData } = data;
+    const { colorIds, sizeIds, images, slug: rawSlug, ...productData } = data;
     const imagesJson = images ? JSON.stringify(images) : null;
-    return prisma.product.create({
+    const uniqueSlug = await generateUniqueSlug(rawSlug || data.name);
+
+    const product = await prisma.product.create({
         data: {
             ...productData,
+            slug: uniqueSlug,
             images: imagesJson,
             productColors: colorIds
                 ? {
@@ -78,6 +114,7 @@ export async function createProduct(data: {
             },
         },
     });
+    return serialize(product);
 }
 
 export async function deleteProduct(id: number) {
@@ -96,16 +133,22 @@ export async function updateProduct(
         status: boolean;
         image: string;
         images?: string[];
+        tiktokUrl?: string | null;
+        facebookUrl?: string | null;
+        instagramUrl?: string | null;
         colorIds?: number[];
         sizeIds?: number[];
     }
 ) {
-    const { colorIds, sizeIds, images, ...productData } = data;
+    const { colorIds, sizeIds, images, slug: rawSlug, ...productData } = data;
     const imagesJson = images ? JSON.stringify(images) : undefined;
-    return prisma.product.update({
+    const uniqueSlug = await generateUniqueSlug(rawSlug || data.name, id);
+
+    const product = await prisma.product.update({
         where: { id },
         data: {
             ...productData,
+            slug: uniqueSlug,
             images: imagesJson,
             productColors: colorIds
                 ? {
@@ -129,4 +172,5 @@ export async function updateProduct(
             },
         },
     });
+    return serialize(product);
 }

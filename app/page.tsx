@@ -3,7 +3,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import HomeCollections from "./components/HomeCollections";
 import { getProducts } from "./actions/product";
-import { getHomepageSettings } from "./actions/settings";
+import { getHomepageSettings, getSettings } from "./actions/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +13,10 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-    const [products, hero] = await Promise.all([
+    const [products, hero, settings] = await Promise.all([
         getProducts(),
         getHomepageSettings(),
+        getSettings(),
     ]);
 
     return (
@@ -59,7 +60,7 @@ export default async function HomePage() {
             </section>
 
             {/* ── Our Collections ──────────────────────────────────── */}
-            <HomeCollections products={products} />
+            <HomeCollections products={products} showSocialVideoLinks={settings?.showSocialVideoLinks ?? true} />
 
             {/* ── Features ─────────────────────────────────────────── */}
             <section className="bg-gray-50 py-14 mt-auto">

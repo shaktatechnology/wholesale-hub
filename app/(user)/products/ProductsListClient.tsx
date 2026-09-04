@@ -11,13 +11,17 @@ type Product = {
     discount: any;
     stock: number;
     description: string;
+    tiktokUrl?: string | null;
+    facebookUrl?: string | null;
+    instagramUrl?: string | null;
 };
 
 type Props = {
     initialProducts: Product[];
+    showSocialVideoLinks?: boolean;
 };
 
-export default function ProductsListClient({ initialProducts }: Props) {
+export default function ProductsListClient({ initialProducts, showSocialVideoLinks = true }: Props) {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortOption, setSortOption] = useState("newest");
     const [stockFilter, setStockFilter] = useState("all"); // "all" | "instock"
@@ -164,6 +168,11 @@ export default function ProductsListClient({ initialProducts }: Props) {
                             image={product.image}
                             price={product.price.toString()}
                             discount={product.discount?.toString() ?? "0"}
+                            stock={product.stock}
+                            tiktokUrl={product.tiktokUrl}
+                            facebookUrl={product.facebookUrl}
+                            instagramUrl={product.instagramUrl}
+                            showSocialVideoLinks={showSocialVideoLinks}
                             rating={i % 3 === 1 ? 5 : 4}
                             reviewCount={100 + i * 12 + 3}
                         />

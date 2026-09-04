@@ -1,17 +1,22 @@
 "use client";
 import { useState, useTransition } from "react";
 import { deleteProduct } from "../../actions/product";
+import { TikTokIcon, FacebookIcon, InstagramIcon } from "@/app/components/SocialIcons";
 
 type Product = {
   id: number;
   name: string;
   slug: string;
   image: string;
+  images?: string | null;
   price: unknown;
   discount: unknown;
   stock: number;
   status: boolean;
   description: string;
+  tiktokUrl?: string | null;
+  facebookUrl?: string | null;
+  instagramUrl?: string | null;
 };
 
 type Props = {
@@ -48,8 +53,8 @@ export default function ProductTable({ products, onEdit, onDelete }: Props) {
             <tr>
               <th className="text-left px-4 py-3 w-12">S.N.</th>
               <th className="text-left px-4 py-3">Image</th>
-              <th className="text-left px-4 py-3">Name</th>
-              <th className="text-left px-4 py-3">Slug</th>
+              <th className="text-left px-4 py-3 min-w-[220px]">Name</th>
+              <th className="text-left px-4 py-3">Video Links</th>
               <th className="text-left px-4 py-3">Price</th>
               <th className="text-left px-4 py-3">Stock</th>
               <th className="text-left px-4 py-3">Status</th>
@@ -59,6 +64,8 @@ export default function ProductTable({ products, onEdit, onDelete }: Props) {
           <tbody>
             {paginatedProducts.map((p, idx) => {
               const serialNumber = (activePage - 1) * itemsPerPage + idx + 1;
+              const hasVideo = p.tiktokUrl || p.facebookUrl || p.instagramUrl;
+
               return (
                 <tr
                   key={p.id}
@@ -74,8 +81,50 @@ export default function ProductTable({ products, onEdit, onDelete }: Props) {
                       className="w-10 h-10 object-cover rounded"
                     />
                   </td>
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{p.slug}</td>
+                  <td className="px-4 py-3 font-semibold text-gray-900 leading-snug">
+                    {p.name}
+                  </td>
+                  <td className="px-4 py-3">
+                    {hasVideo ? (
+                      <div className="flex items-center gap-1.5">
+                        {p.tiktokUrl && (
+                          <a
+                            href={p.tiktokUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Watch TikTok Video"
+                            className="p-1 rounded-full text-black hover:bg-gray-200 transition"
+                          >
+                            <TikTokIcon className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {p.facebookUrl && (
+                          <a
+                            href={p.facebookUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Watch Facebook Video"
+                            className="p-1 rounded-full text-blue-600 hover:bg-blue-50 transition"
+                          >
+                            <FacebookIcon className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {p.instagramUrl && (
+                          <a
+                            href={p.instagramUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Watch Instagram Video"
+                            className="p-1 rounded-full text-pink-600 hover:bg-pink-50 transition"
+                          >
+                            <InstagramIcon className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400 font-normal">-</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <div>Rs. {Number(p.price).toLocaleString()}</div>
                     {Number(p.discount) > 0 && (

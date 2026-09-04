@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { TikTokIcon, FacebookIcon, InstagramIcon } from "./SocialIcons";
 
 type Props = {
   name: string;
@@ -7,6 +8,11 @@ type Props = {
   image: string;
   price: number | string;
   discount?: number | string;
+  stock?: number;
+  tiktokUrl?: string | null;
+  facebookUrl?: string | null;
+  instagramUrl?: string | null;
+  showSocialVideoLinks?: boolean;
   /** Static display rating 1-5, defaults to 4 */
   rating?: number;
   /** Review count shown in parentheses */
@@ -41,9 +47,17 @@ export default function ProductCard({
   image,
   price,
   discount = 0,
+  stock,
+  tiktokUrl,
+  facebookUrl,
+  instagramUrl,
+  showSocialVideoLinks = true,
   rating = 4,
   reviewCount = 102,
 }: Props) {
+  const hasVideoLinks = Boolean(tiktokUrl || facebookUrl || instagramUrl);
+  const isOutOfStock = stock !== undefined && stock <= 0;
+
   return (
     <div className="group bg-white rounded overflow-hidden">
       {/* Image — 3:4 portrait ratio */}
@@ -57,8 +71,13 @@ export default function ProductCard({
           alt={name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          className={`object-cover group-hover:scale-105 transition-transform duration-300 ${isOutOfStock ? "opacity-75 grayscale-25" : ""}`}
         />
+        {isOutOfStock && (
+          <span className="absolute top-2 left-2 bg-red-600/90 backdrop-blur-xs text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-xs z-10">
+            Out of Stock
+          </span>
+        )}
       </Link>
 
       {/* Info */}
@@ -88,15 +107,60 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* Stars + Shop Now */}
-        <div className="flex items-center justify-between mt-1.5">
+        {/* Stars + Shop Now & Social Icons */}
+        <div className="flex items-center justify-between mt-1.5 gap-1">
           <Stars rating={rating} count={reviewCount} />
-          <Link
-            href={`/products/${slug}`}
-            className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded hover:bg-black transition-colors duration-200 shrink-0"
-          >
-            Shop Now
-          </Link>
+          
+          <div className="flex items-center gap-1.5 shrink-0">
+            {showSocialVideoLinks && hasVideoLinks && (
+              <div className="flex items-center gap-1">
+                {tiktokUrl && (
+                  <a
+                    href={tiktokUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Watch on TikTok"
+                    className="p-1 rounded-full text-gray-800 hover:text-black hover:bg-gray-100 transition"
+                  >
+                    <TikTokIcon className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                {facebookUrl && (
+                  <a
+                    href={facebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Watch on Facebook"
+                    className="p-1 rounded-full text-blue-600 hover:bg-blue-50 transition"
+                  >
+                    <FacebookIcon className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                {instagramUrl && (
+                  <a
+                    href={instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Watch on Instagram"
+                    className="p-1 rounded-full text-pink-600 hover:bg-pink-50 transition"
+                  >
+                    <InstagramIcon className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            )}
+
+            <Link
+              href={`/products/${slug}`}
+              className={
+                isOutOfStock
+                  ? "bg-red-50 text-red-600 border border-red-200 text-xs px-2.5 py-1 rounded font-semibold hover:bg-red-100 transition-colors duration-200"
+                  : "bg-gray-900 text-white text-xs px-3 py-1.5 rounded hover:bg-black transition-colors duration-200"
+              }
+            >
+              {isOutOfStock ? "Out of Stock" : "Shop Now"}
+            </Link>
+          </div>
         </div>
       </div>
     </div>

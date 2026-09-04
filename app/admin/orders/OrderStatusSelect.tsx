@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { updateOrderStatus } from "../../actions/order";
+import { useToast } from "@/app/components/Toast";
 
 const STATUS_OPTIONS = ["pending", "processing", "delivered", "cancelled"];
 
@@ -18,6 +19,7 @@ export default function OrderStatusSelect({
     id: number;
     currentStatus: string;
 }) {
+    const { toast } = useToast();
     const [status, setStatus] = useState(currentStatus);
     const [pending, startTransition] = useTransition();
 
@@ -26,6 +28,7 @@ export default function OrderStatusSelect({
         setStatus(newStatus);
         startTransition(async () => {
             await updateOrderStatus(id, newStatus);
+            toast(`Order #${id} status updated to ${newStatus}!`, "success");
         });
     }
 

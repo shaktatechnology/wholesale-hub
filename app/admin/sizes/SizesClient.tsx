@@ -1,10 +1,12 @@
 "use client";
 import { useState, useTransition } from "react";
 import { createSize, deleteSize, updateSize } from "../../actions/size";
+import { useToast } from "@/app/components/Toast";
 
 type Size = { id: number; name: string };
 
 export default function SizesClient({ initialSizes }: { initialSizes: Size[] }) {
+    const { toast } = useToast();
     const [sizes, setSizes] = useState(initialSizes);
     const [name, setName] = useState("");
     const [editingSize, setEditingSize] = useState<Size | null>(null);
@@ -22,14 +24,16 @@ export default function SizesClient({ initialSizes }: { initialSizes: Size[] }) 
                     prev.map((s) => (s.id === editingSize.id ? updated : s))
                 );
                 setEditingSize(null);
+                toast("Size updated successfully!", "success");
             } else {
                 const newSize = await createSize({ name });
                 setSizes((prev) => [newSize, ...prev]);
+                toast("Size created successfully!", "success");
             }
             setName("");
         } catch (err) {
             console.error("Failed to save size:", err);
-            alert("Error saving size. Please try again.");
+            toast("Error saving size. Please try again.", "error");
         } finally {
             setLoading(false);
         }
@@ -50,6 +54,7 @@ export default function SizesClient({ initialSizes }: { initialSizes: Size[] }) 
         startTransition(async () => {
             await deleteSize(id);
             setSizes((prev) => prev.filter((s) => s.id !== id));
+            toast("Size deleted successfully!", "info");
             if (editingSize?.id === id) {
                 handleCancel();
             }

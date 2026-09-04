@@ -3,14 +3,18 @@
 
 import { prisma } from "../lib/prisma";
 import { revalidatePath } from "next/cache";
+import { serialize } from "../lib/serialize";
 
 export async function getSettings() {
-    return prisma.setting.findFirst();
+    const setting = await prisma.setting.findFirst();
+    return serialize(setting);
 }
 
 export async function getHomepageSettings() {
-    return prisma.homepageSetting.findFirst();
+    const homepage = await prisma.homepageSetting.findFirst();
+    return serialize(homepage);
 }
+
 
 export async function saveSettings(data: {
     siteName: string;
@@ -23,7 +27,11 @@ export async function saveSettings(data: {
     favicon?: string;
     facebook?: string;
     instagram?: string;
-    twitter?: string;
+    tiktok?: string;
+    showSocialVideoLinks?: boolean;
+    enableLowStockAlert?: boolean;
+    lowStockThreshold?: number;
+    allowOutOfStockOrders?: boolean;
     qrImage?: string;
     whatsapp?: string;
 }) {
@@ -41,7 +49,11 @@ export async function saveSettings(data: {
         favicon: toNull(data.favicon),
         facebook: toNull(data.facebook),
         instagram: toNull(data.instagram),
-        twitter: toNull(data.twitter),
+        tiktok: toNull(data.tiktok),
+        showSocialVideoLinks: data.showSocialVideoLinks ?? true,
+        enableLowStockAlert: data.enableLowStockAlert ?? true,
+        lowStockThreshold: data.lowStockThreshold ?? 5,
+        allowOutOfStockOrders: data.allowOutOfStockOrders ?? false,
         qrImage: toNull(data.qrImage),
         whatsapp: toNull(data.whatsapp),
     };

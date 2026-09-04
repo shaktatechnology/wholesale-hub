@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import { saveSettings, saveHomepageSettings } from "../../actions/settings";
 import { compressImage } from "@/app/lib/compressImage";
+import { TikTokIcon, FacebookIcon, InstagramIcon, WhatsAppIcon } from "@/app/components/SocialIcons";
 
 type Setting = {
     id: number;
@@ -15,7 +16,11 @@ type Setting = {
     favicon?: string | null;
     facebook?: string | null;
     instagram?: string | null;
-    twitter?: string | null;
+    tiktok?: string | null;
+    showSocialVideoLinks?: boolean;
+    enableLowStockAlert?: boolean;
+    lowStockThreshold?: number;
+    allowOutOfStockOrders?: boolean;
     qrImage?: string | null;
     whatsapp?: string | null;
 } | null;
@@ -157,6 +162,8 @@ function ImagePicker({ label, currentUrl, onUploaded, onCleared, hint, previewCl
 }
 
 /* ─── Main settings form ────────────────────────────────────────────── */
+import { useToast } from "@/app/components/Toast";
+
 export default function SettingsClient({
     settings,
     homepage,
@@ -164,6 +171,7 @@ export default function SettingsClient({
     settings: Setting;
     homepage: HomepageSetting;
 }) {
+    const { toast } = useToast();
     const [siteForm, setSiteForm] = useState({
         siteName: settings?.siteName ?? "",
         email: settings?.email ?? "",
@@ -175,7 +183,11 @@ export default function SettingsClient({
         favicon: settings?.favicon ?? "",
         facebook: settings?.facebook ?? "",
         instagram: settings?.instagram ?? "",
-        twitter: settings?.twitter ?? "",
+        tiktok: settings?.tiktok ?? "",
+        showSocialVideoLinks: settings?.showSocialVideoLinks ?? true,
+        enableLowStockAlert: settings?.enableLowStockAlert ?? true,
+        lowStockThreshold: String(settings?.lowStockThreshold ?? "5"),
+        allowOutOfStockOrders: settings?.allowOutOfStockOrders ?? false,
         qrImage: settings?.qrImage ?? "",
         whatsapp: settings?.whatsapp ?? "",
     });
@@ -190,29 +202,49 @@ export default function SettingsClient({
 
     const [siteLoading, setSiteLoading] = useState(false);
     const [heroLoading, setHeroLoading] = useState(false);
-    const [siteMsg, setSiteMsg] = useState("");
-    const [heroMsg, setHeroMsg] = useState("");
+
+    async function handleToggleChange(
+        key: "showSocialVideoLinks" | "enableLowStockAlert" | "allowOutOfStockOrders",
+        newValue: boolean,
+        label: string
+    ) {
+        const updatedForm = { ...siteForm, [key]: newValue };
+        setSiteForm(updatedForm);
+
+        try {
+            await saveSettings({
+                ...updatedForm,
+                shippingCharge: parseFloat(updatedForm.shippingCharge) || 0,
+                advancePayment: parseFloat(updatedForm.advancePayment) || 0,
+                lowStockThreshold: parseInt(updatedForm.lowStockThreshold, 10) || 5,
+            });
+            toast(`${label} preference saved!`, "success");
+        } catch (err) {
+            console.error("Failed to save toggle preference:", err);
+            setSiteForm((p) => ({ ...p, [key]: !newValue }));
+            toast("Failed to save preference.", "error");
+        }
+    }
 
     async function handleSiteSave(e: React.FormEvent) {
         e.preventDefault();
         setSiteLoading(true);
-        setSiteMsg("");
         await saveSettings({
             ...siteForm,
             shippingCharge: parseFloat(siteForm.shippingCharge) || 0,
             advancePayment: parseFloat(siteForm.advancePayment) || 0,
+            lowStockThreshold: parseInt(siteForm.lowStockThreshold, 10) || 5,
         });
         setSiteLoading(false);
-        setSiteMsg("✓ Site settings saved!");
+        toast("Site settings saved successfully!", "success");
     }
 
     async function handleHeroSave(e: React.FormEvent) {
         e.preventDefault();
         setHeroLoading(true);
-        setHeroMsg("");
         await saveHomepageSettings(heroForm);
         setHeroLoading(false);
-        setHeroMsg("✓ Homepage settings saved!");
+        toast("Homepage settings saved successfully!", "success");
     }
 
     return (
@@ -221,26 +253,139 @@ export default function SettingsClient({
             {/* ── Site Settings ───────────────────────────── */}
             <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Site Settings</h2>
-                {siteMsg && <p className="text-green-600 text-sm mb-3">{siteMsg}</p>}
 
                 <form onSubmit={handleSiteSave} className="space-y-4">
+
+                    {/* Social Media Video Display Toggle */}
+                    <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between">
+                        <div>
+                            <label className="text-sm font-semibold text-gray-800 block">Show Social Video Icons on Product Cards</label>
+                            <p className="text-xs text-gray-500">Display TikTok, Facebook & Instagram video icons next to "Shop Now" on product grid cards.</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() =>
+                                handleToggleChange(
+                                    "showSocialVideoLinks",
+                                    !siteForm.showSocialVideoLinks,
+                                    "Social video icons"
+                                )
+                            }
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                siteForm.showSocialVideoLinks ? "bg-black" : "bg-gray-300"
+                            }`}
+                        >
+                            <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    siteForm.showSocialVideoLinks ? "translate-x-5" : "translate-x-0"
+                                }`}
+                            />
+                        </button>
+                    </div>
+
+                    {/* Low Stock Warning Alert Settings */}
+                    <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <label className="text-sm font-semibold text-gray-900 block">Enable Low Stock Warning Alert</label>
+                                <p className="text-xs text-gray-600 mt-0.5">
+                                    Normal "In Stock" badge is hidden. Show a warning badge when stock drops to or below threshold.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    handleToggleChange(
+                                        "enableLowStockAlert",
+                                        !siteForm.enableLowStockAlert,
+                                        "Low stock warning"
+                                    )
+                                }
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    siteForm.enableLowStockAlert ? "bg-amber-600" : "bg-gray-300"
+                                }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        siteForm.enableLowStockAlert ? "translate-x-5" : "translate-x-0"
+                                    }`}
+                                />
+                            </button>
+                        </div>
+
+                        {siteForm.enableLowStockAlert && (
+                            <div className="pt-2 border-t border-amber-200/60">
+                                <label className="text-xs text-gray-700 font-semibold block mb-1">
+                                    Show "Low Stock" Warning when Quantity is at or below:
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={siteForm.lowStockThreshold}
+                                        onChange={(e) => setSiteForm((p) => ({ ...p, lowStockThreshold: e.target.value }))}
+                                        onBlur={async () => {
+                                            const threshold = parseInt(siteForm.lowStockThreshold, 10) || 5;
+                                            await saveSettings({
+                                                ...siteForm,
+                                                shippingCharge: parseFloat(siteForm.shippingCharge) || 0,
+                                                advancePayment: parseFloat(siteForm.advancePayment) || 0,
+                                                lowStockThreshold: threshold,
+                                            });
+                                            toast("Low stock threshold updated!", "success");
+                                        }}
+                                        className="w-24 border border-gray-300 rounded px-3 py-1.5 text-sm bg-white outline-none focus:border-black"
+                                    />
+                                    <span className="text-xs text-gray-500 font-medium">units left</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Allow Out of Stock Orders Toggle */}
+                    <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between">
+                        <div>
+                            <label className="text-sm font-semibold text-gray-800 block">Allow Ordering Out of Stock Products</label>
+                            <p className="text-xs text-gray-500">If enabled, customers can still place orders even when product stock reaches 0.</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() =>
+                                handleToggleChange(
+                                    "allowOutOfStockOrders",
+                                    !siteForm.allowOutOfStockOrders,
+                                    "Out of stock ordering"
+                                )
+                            }
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                siteForm.allowOutOfStockOrders ? "bg-black" : "bg-gray-300"
+                            }`}
+                        >
+                            <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    siteForm.allowOutOfStockOrders ? "translate-x-5" : "translate-x-0"
+                                }`}
+                            />
+                        </button>
+                    </div>
 
                     {/* Text fields */}
                     {[
                         { label: "Site Name", key: "siteName", max: 100 },
                         { label: "Shipping Charge (Rs.)", key: "shippingCharge", type: "number" },
                         { label: "Advance Payment Per Piece (Rs.)", key: "advancePayment", type: "number", hint: "default advance payment required per piece" },
-                        { label: "WhatsApp Number", key: "whatsapp", max: 20, hint: "with country code, e.g. 97798xxxxxxxx" },
-                        { label: "Facebook URL", key: "facebook", max: 255 },
-                        { label: "Instagram URL", key: "instagram", max: 255 },
-                        { label: "Twitter URL", key: "twitter", max: 255 },
+                        { label: "WhatsApp Number", key: "whatsapp", max: 20, hint: "with country code, e.g. 97798xxxxxxxx", icon: <WhatsAppIcon className="w-4 h-4 text-emerald-600" /> },
+                        { label: "Facebook URL", key: "facebook", max: 255, icon: <FacebookIcon className="w-4 h-4 text-blue-600" /> },
+                        { label: "Instagram URL", key: "instagram", max: 255, icon: <InstagramIcon className="w-4 h-4 text-pink-600" /> },
+                        { label: "TikTok URL", key: "tiktok", max: 255, icon: <TikTokIcon className="w-4 h-4 text-black" /> },
                     ].map((f) => {
                         const val = String(siteForm[f.key as keyof typeof siteForm] || "");
                         return (
                             <div key={f.key}>
                                 <div className="flex justify-between items-center mb-1">
                                     <div className="flex items-center gap-1.5">
-                                        <label className="text-xs text-gray-500 block">{f.label}</label>
+                                        {f.icon}
+                                        <label className="text-xs text-gray-500 block font-medium">{f.label}</label>
                                         {'hint' in f && (
                                             <span className="text-[10px] text-gray-400 italic">
                                                 ({f.hint})
@@ -309,7 +454,6 @@ export default function SettingsClient({
             {/* ── Homepage Hero Settings ───────────────────── */}
             <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Homepage Hero Settings</h2>
-                {heroMsg && <p className="text-green-600 text-sm mb-3">{heroMsg}</p>}
 
                 <form onSubmit={handleHeroSave} className="space-y-4">
 
