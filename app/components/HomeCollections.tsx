@@ -79,7 +79,7 @@ export default function HomeCollections({
     }, [categories, selectedCategoryId]);
 
     return (
-        <section id="collections" className="max-w-6xl mx-auto px-4 py-14 w-full scroll-mt-20">
+        <section id="collections" className="max-w-6xl mx-auto px-4 py-14 w-full scroll-mt-14">
             {/* Header: Title on left, Search bar on right */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
@@ -148,15 +148,15 @@ export default function HomeCollections({
                             }`}
                         >
                             <span>All Products</span>
-                            <span
+                            {/* <span
                                 className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                                     selectedCategoryId === "all"
                                         ? "bg-white/25 text-white"
                                         : "bg-gray-200 text-gray-600"
                                 }`}
-                            >
-                                {products.length}
-                            </span>
+                            > */}
+                                {/* {products.length} */}
+                            {/* </span> */}
                         </button>
 
                         {/* Category Buttons in Admin-Defined Sort Order (Only with products > 0) */}
@@ -176,7 +176,7 @@ export default function HomeCollections({
                                     }`}
                                 >
                                     <span>{cat.name}</span>
-                                    <span
+                                    {/* <span
                                         className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                                             isSelected
                                                 ? "bg-white/25 text-white"
@@ -184,7 +184,7 @@ export default function HomeCollections({
                                         }`}
                                     >
                                         {count}
-                                    </span>
+                                    </span> */}
                                 </button>
                             );
                         })}

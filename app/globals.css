@@ -15,7 +15,6 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Prevent accidental horizontal swipe-to-navigate gesture in iOS Safari */
 /* Prevent accidental horizontal swipe-to-navigate gesture and horizontal drift in iOS Safari */
 html,
 body {
