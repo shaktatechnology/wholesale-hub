@@ -130,7 +130,13 @@ export default function HomeCollections({
             {visibleCategories.length > 0 && (
                 <div className="mb-8">
                     {/* Responsive Container: Horizontal swipe scroll on Mobile, Wrapped flex on Desktop */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap scrollbar-none">
+                    <div
+                        className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap scrollbar-none overscroll-x-contain touch-pan-x"
+                        style={{
+                            overscrollBehaviorX: "contain",
+                            WebkitOverflowScrolling: "touch",
+                        }}
+                    >
                         {/* "All" Button */}
                         <button
                             type="button"
