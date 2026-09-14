@@ -15,9 +15,16 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Prevent accidental horizontal swipe-to-navigate gesture in iOS Safari */
+html,
+body {
+  overscroll-behavior-x: none;
+}
+
 /* Force light mode always */
 body {
   background: #ffffff;
   color: #171717;
   font-family: var(--font-geist-sans, Arial, sans-serif);
 }
+

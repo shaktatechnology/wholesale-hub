@@ -27,7 +27,7 @@ export default async function HomePage() {
 
             {/* ── Hero Section ─────────────────────────────────────── */}
             <section
-                className="relative text-white flex items-center justify-center text-center bg-gray-800 bg-cover bg-center min-h-[35vh] sm:min-h-[calc(100vh-3.5rem)]"
+                className="relative text-white flex items-center justify-center text-center bg-gray-800 bg-cover bg-center min-h-[35dvh] sm:min-h-[calc(100dvh-3.5rem)] touch-pan-y overscroll-x-none"
                 style={{
                     backgroundImage: hero?.image ? `url(${hero.image})` : undefined,
                 }}
