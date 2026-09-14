@@ -3,6 +3,13 @@ import { useState } from "react";
 import ProductTable from "./ProductTable";
 import ProductFormModal from "./ProductFormModal";
 
+type Category = {
+    id: number;
+    name: string;
+    slug: string;
+    sortOrder?: number;
+};
+
 type Product = {
     id: number;
     name: string;
@@ -17,6 +24,8 @@ type Product = {
     tiktokUrl?: string | null;
     facebookUrl?: string | null;
     instagramUrl?: string | null;
+    categoryId?: number | null;
+    category?: Category | null;
 };
 
 type Color = {
@@ -36,10 +45,12 @@ export default function ProductsClient({
     initialProducts,
     colors,
     sizes,
+    categories,
 }: {
     initialProducts: Product[];
     colors: Color[];
     sizes: Size[];
+    categories: Category[];
 }) {
     const { toast } = useToast();
     const [products, setProducts] = useState(initialProducts);
@@ -50,6 +61,7 @@ export default function ProductsClient({
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [stockFilter, setStockFilter] = useState("all");
+    const [categoryFilter, setCategoryFilter] = useState("all");
     const [sortBy, setSortBy] = useState("newest");
 
     function handleDelete(id: number) {
@@ -89,7 +101,12 @@ export default function ProductsClient({
                 (stockFilter === "instock" && p.stock > 0) ||
                 (stockFilter === "outofstock" && p.stock === 0);
 
-            return matchesSearch && matchesStatus && matchesStock;
+            const matchesCategory =
+                categoryFilter === "all" ||
+                (categoryFilter === "none" && !p.categoryId) ||
+                p.categoryId === Number(categoryFilter);
+
+            return matchesSearch && matchesStatus && matchesStock && matchesCategory;
         })
         .sort((a, b) => {
             switch (sortBy) {
@@ -161,6 +178,24 @@ export default function ProductsClient({
 
                 {/* Filter & Sort Dropdowns */}
                 <div className="flex flex-wrap items-center gap-3">
+                    {/* Category Filter */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500 font-medium">Category:</span>
+                        <select
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none bg-white focus:border-black cursor-pointer max-w-[140px] truncate"
+                        >
+                            <option value="all">All Categories</option>
+                            {categories.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.name}
+                                </option>
+                            ))}
+                            <option value="none">Uncategorized</option>
+                        </select>
+                    </div>
+
                     {/* Status Filter */}
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs text-gray-500 font-medium">Status:</span>
@@ -211,11 +246,11 @@ export default function ProductsClient({
             {/* Results count label */}
             <div className="mb-4 text-xs text-gray-500">
                 Found {filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"}
-                {(searchTerm || statusFilter !== "all" || stockFilter !== "all") && " matching active filters"}
+                {(searchTerm || statusFilter !== "all" || stockFilter !== "all" || categoryFilter !== "all") && " matching active filters"}
             </div>
 
             <ProductTable
-                key={`${searchTerm}-${statusFilter}-${stockFilter}-${sortBy}`}
+                key={`${searchTerm}-${statusFilter}-${stockFilter}-${categoryFilter}-${sortBy}`}
                 products={filteredProducts}
                 onEdit={(p) => {
                     setEditingProduct(p);
@@ -229,6 +264,7 @@ export default function ProductsClient({
                 product={editingProduct}
                 colors={colors}
                 sizes={sizes}
+                categories={categories}
                 onClose={() => {
                     setIsFormOpen(false);
                     setEditingProduct(null);

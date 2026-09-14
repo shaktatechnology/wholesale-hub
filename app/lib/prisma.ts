@@ -7,15 +7,22 @@ const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined;
 };
 
-const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
-
-// Reset global cached client in dev mode if schema changed
-if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = undefined;
+function getDatabaseUrl(): string {
+    const url = process.env.DATABASE_URL || "";
+    if (url && !url.includes("allowPublicKeyRetrieval")) {
+        const separator = url.includes("?") ? "&" : "?";
+        return `${url}${separator}allowPublicKeyRetrieval=true`;
+    }
+    return url;
 }
 
-export const prisma =
-    globalForPrisma.prisma ?? new PrismaClient({ adapter });
+function createPrismaClient(): PrismaClient {
+    const adapter = new PrismaMariaDb(getDatabaseUrl());
+    return new PrismaClient({ adapter });
+}
 
-if (process.env.NODE_ENV !== "production")
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
     globalForPrisma.prisma = prisma;
+}

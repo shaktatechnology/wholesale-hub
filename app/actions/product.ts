@@ -8,6 +8,9 @@ export async function getProducts() {
     const products = await prisma.product.findMany({
         where: { status: true },
         orderBy: { createdAt: "desc" },
+        include: {
+            category: true,
+        },
     });
     return serialize(products);
 }
@@ -17,6 +20,7 @@ export async function getProductBySlug(slug: string) {
     const product = await prisma.product.findUnique({
         where: { slug: decodedSlug },
         include: {
+            category: true,
             productColors: {
                 include: { color: true },
             },
@@ -32,6 +36,7 @@ export async function getAllProducts() {
     const products = await prisma.product.findMany({
         orderBy: { createdAt: "desc" },
         include: {
+            category: true,
             productColors: {
                 include: { color: true },
             },
@@ -82,10 +87,11 @@ export async function createProduct(data: {
     tiktokUrl?: string | null;
     facebookUrl?: string | null;
     instagramUrl?: string | null;
+    categoryId?: number | null;
     colorIds?: number[];
     sizeIds?: number[];
 }) {
-    const { colorIds, sizeIds, images, slug: rawSlug, ...productData } = data;
+    const { colorIds, sizeIds, images, slug: rawSlug, categoryId, ...productData } = data;
     const imagesJson = images ? JSON.stringify(images) : null;
     const uniqueSlug = await generateUniqueSlug(rawSlug || data.name);
 
@@ -94,6 +100,7 @@ export async function createProduct(data: {
             ...productData,
             slug: uniqueSlug,
             images: imagesJson,
+            categoryId: categoryId ? Number(categoryId) : null,
             productColors: colorIds
                 ? {
                       create: colorIds.map((colorId) => ({ colorId })),
@@ -106,6 +113,7 @@ export async function createProduct(data: {
                 : undefined,
         },
         include: {
+            category: true,
             productColors: {
                 include: { color: true },
             },
@@ -136,11 +144,12 @@ export async function updateProduct(
         tiktokUrl?: string | null;
         facebookUrl?: string | null;
         instagramUrl?: string | null;
+        categoryId?: number | null;
         colorIds?: number[];
         sizeIds?: number[];
     }
 ) {
-    const { colorIds, sizeIds, images, slug: rawSlug, ...productData } = data;
+    const { colorIds, sizeIds, images, slug: rawSlug, categoryId, ...productData } = data;
     const imagesJson = images ? JSON.stringify(images) : undefined;
     const uniqueSlug = await generateUniqueSlug(rawSlug || data.name, id);
 
@@ -150,6 +159,7 @@ export async function updateProduct(
             ...productData,
             slug: uniqueSlug,
             images: imagesJson,
+            categoryId: categoryId !== undefined ? (categoryId ? Number(categoryId) : null) : undefined,
             productColors: colorIds
                 ? {
                       deleteMany: {},
@@ -164,6 +174,7 @@ export async function updateProduct(
                 : undefined,
         },
         include: {
+            category: true,
             productColors: {
                 include: { color: true },
             },

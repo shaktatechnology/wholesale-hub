@@ -5,6 +5,13 @@ import { compressImage } from "@/app/lib/compressImage";
 import { useToast } from "@/app/components/Toast";
 import { TikTokIcon, FacebookIcon, InstagramIcon } from "@/app/components/SocialIcons";
 
+type Category = {
+    id: number;
+    name: string;
+    slug: string;
+    sortOrder?: number;
+};
+
 type Color = {
     id: number;
     name: string;
@@ -30,6 +37,8 @@ type Product = {
     tiktokUrl?: string | null;
     facebookUrl?: string | null;
     instagramUrl?: string | null;
+    categoryId?: number | null;
+    category?: Category | null;
     productColors?: {
         id: number;
         productId: number;
@@ -59,9 +68,10 @@ type Props = {
     product: Product | null;
     colors: Color[];
     sizes: Size[];
+    categories: Category[];
 };
 
-export default function ProductFormModal({ isOpen, onClose, onSaved, product, colors, sizes }: Props) {
+export default function ProductFormModal({ isOpen, onClose, onSaved, product, colors, sizes, categories }: Props) {
     const { toast } = useToast();
     const [form, setForm] = useState({
         name: "",
@@ -71,6 +81,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
         discount: "",
         stock: "",
         status: true,
+        categoryId: "",
         tiktokUrl: "",
         facebookUrl: "",
         instagramUrl: "",
@@ -128,6 +139,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                     discount: String(product.discount || 0),
                     stock: String(product.stock),
                     status: product.status,
+                    categoryId: product.categoryId ? String(product.categoryId) : "",
                     tiktokUrl: product.tiktokUrl || "",
                     facebookUrl: product.facebookUrl || "",
                     instagramUrl: product.instagramUrl || "",
@@ -169,6 +181,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                     discount: "0",
                     stock: "",
                     status: true,
+                    categoryId: "",
                     tiktokUrl: "",
                     facebookUrl: "",
                     instagramUrl: "",
@@ -306,6 +319,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                 discount: parseFloat(form.discount || "0"),
                 stock: parseInt(form.stock),
                 status: form.status,
+                categoryId: form.categoryId ? Number(form.categoryId) : null,
                 image: coverUrl,
                 images: uploadedUrls,
                 tiktokUrl: form.tiktokUrl.trim() || null,
@@ -498,6 +512,24 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                         >
                             <option value="true">Active</option>
                             <option value="false">Inactive</option>
+                        </select>
+                    </div>
+
+                    {/* Category */}
+                    <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Category</label>
+                        <select
+                            name="categoryId"
+                            value={form.categoryId}
+                            onChange={handleChange}
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black"
+                        >
+                            <option value="">None (Uncategorized)</option>
+                            {categories.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.name}
+                                </option>
+                            ))}
                         </select>
                     </div>
 

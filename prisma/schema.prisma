@@ -38,11 +38,23 @@ model Product {
   tiktokUrl     String?        @db.Text
   facebookUrl   String?        @db.Text
   instagramUrl  String?        @db.Text
+  categoryId    Int?
+  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   productColors ProductColor[]
   productSizes  ProductSize[]
   orderItems    OrderItem[]
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
 }
 
 model Color {

@@ -13,6 +13,8 @@ type Props = {
   facebookUrl?: string | null;
   instagramUrl?: string | null;
   showSocialVideoLinks?: boolean;
+  /** Image aspect ratio, defaults to "1/1" (square) */
+  aspectRatio?: string;
   /** Static display rating 1-5, defaults to 4 */
   rating?: number;
   /** Review count shown in parentheses */
@@ -52,6 +54,7 @@ export default function ProductCard({
   facebookUrl,
   instagramUrl,
   showSocialVideoLinks = true,
+  aspectRatio = "1/1",
   rating = 4,
   reviewCount = 102,
 }: Props) {
@@ -60,11 +63,11 @@ export default function ProductCard({
 
   return (
     <div className="group bg-white rounded overflow-hidden">
-      {/* Image — 3:4 portrait ratio */}
+      {/* Image — square ratio (height equals width) */}
       <Link
         href={`/products/${slug}`}
-        className="block overflow-hidden bg-gray-100 relative"
-        style={{ aspectRatio: "3/4" }}
+        className="block overflow-hidden bg-gray-100 relative aspect-square"
+        style={{ aspectRatio }}
       >
         <Image
           src={image}

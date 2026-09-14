@@ -9,6 +9,7 @@ import { ToastProvider } from "@/app/components/Toast";
 const navLinks = [
     { label: "Dashboard", href: "/admin" },
     { label: "Products", href: "/admin/product" },
+    { label: "Categories", href: "/admin/categories" },
     { label: "Orders", href: "/admin/orders" },
     { label: "Colors", href: "/admin/colors" },
     { label: "Sizes", href: "/admin/sizes" },

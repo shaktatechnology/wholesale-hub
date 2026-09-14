@@ -17,6 +17,13 @@ type Product = {
   tiktokUrl?: string | null;
   facebookUrl?: string | null;
   instagramUrl?: string | null;
+  categoryId?: number | null;
+  category?: {
+    id: number;
+    name: string;
+    slug: string;
+    sortOrder?: number;
+  } | null;
 };
 
 type Props = {
@@ -53,7 +60,8 @@ export default function ProductTable({ products, onEdit, onDelete }: Props) {
             <tr>
               <th className="text-left px-4 py-3 w-12">S.N.</th>
               <th className="text-left px-4 py-3">Image</th>
-              <th className="text-left px-4 py-3 min-w-[220px]">Name</th>
+              <th className="text-left px-4 py-3 min-w-[200px]">Name</th>
+              <th className="text-left px-4 py-3">Category</th>
               <th className="text-left px-4 py-3">Video Links</th>
               <th className="text-left px-4 py-3">Price</th>
               <th className="text-left px-4 py-3">Stock</th>
@@ -83,6 +91,17 @@ export default function ProductTable({ products, onEdit, onDelete }: Props) {
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-900 leading-snug">
                     {p.name}
+                  </td>
+                  <td className="px-4 py-3">
+                    {p.category ? (
+                      <span className="inline-block text-xs font-semibold bg-gray-100 text-gray-800 px-2.5 py-1 rounded-full border border-gray-200">
+                        {p.category.name}
+                      </span>
+                    ) : (
+                      <span className="inline-block text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded">
+                        Uncategorized
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {hasVideo ? (

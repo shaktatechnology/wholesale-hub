@@ -4,6 +4,7 @@ import Footer from "./components/Footer";
 import HomeCollections from "./components/HomeCollections";
 import { getProducts } from "./actions/product";
 import { getHomepageSettings, getSettings } from "./actions/settings";
+import { getCategories } from "./actions/category";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,11 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-    const [products, hero, settings] = await Promise.all([
+    const [products, hero, settings, categories] = await Promise.all([
         getProducts(),
         getHomepageSettings(),
         getSettings(),
+        getCategories(),
     ]);
 
     return (
@@ -25,33 +27,32 @@ export default async function HomePage() {
 
             {/* ── Hero Section ─────────────────────────────────────── */}
             <section
-                className="relative text-white flex items-center justify-center text-center bg-gray-800 bg-cover bg-center"
+                className="relative text-white flex items-center justify-center text-center bg-gray-800 bg-cover bg-center min-h-[35vh] sm:min-h-[calc(100vh-3.5rem)]"
                 style={{
                     backgroundImage: hero?.image ? `url(${hero.image})` : undefined,
-                    minHeight: "calc(100vh - 3.5rem)",
                 }}
             >
                 {/* Premium Dark Overlay Scrim with slight blur to pop the text */}
                 <div className="absolute inset-0 bg-black/55 backdrop-blur-[1px]" />
 
-                <div className="relative z-10 max-w-3xl mx-auto px-6 py-24 flex flex-col items-center">
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6 drop-shadow-md whitespace-pre-line">
+                <div className="relative z-10 max-w-3xl mx-auto px-4 py-8 sm:px-6 sm:py-24 flex flex-col items-center">
+                    <h1 className="text-xl sm:text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-2 sm:mb-6 drop-shadow-md whitespace-pre-line">
                         {hero?.title ?? "Premium Wholesale Products\nfor Retailers & Businesses"}
                     </h1>
-                    <p className="text-base sm:text-lg md:text-xl text-white/90 mb-10 leading-relaxed max-w-2xl mx-auto drop-shadow-sm font-light">
+                    <p className="text-xs sm:text-lg md:text-xl text-white/90 mb-4 sm:mb-10 leading-relaxed max-w-2xl mx-auto drop-shadow-sm font-light line-clamp-2 sm:line-clamp-none">
                         {hero?.subtitle ??
                             "Discover a wide collection of high-quality sarees at competitive wholesale prices. From traditional elegance to modern trends, we supply retailers, boutiques, and distributors with designs customers love."}
                     </p>
-                    <div className="flex gap-4 justify-center flex-wrap">
+                    <div className="flex gap-2.5 sm:gap-4 justify-center flex-wrap">
                         <a
                             href="#collections"
-                            className="bg-white text-gray-950 text-sm sm:text-base font-semibold px-7 py-3 rounded-full hover:bg-gray-100 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-md whitespace-nowrap cursor-pointer"
+                            className="bg-white text-gray-950 text-xs sm:text-base font-semibold px-4 py-2 sm:px-7 sm:py-3 rounded-full hover:bg-gray-100 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-md whitespace-nowrap cursor-pointer"
                         >
                             {hero?.buttonText ?? "Explore Collection"}
                         </a>
                         <a
                             href="/wholesale-partner"
-                            className="border border-white/80 text-white text-sm sm:text-base font-semibold px-7 py-3 rounded-full hover:bg-white hover:text-gray-950 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 backdrop-blur-xs whitespace-nowrap cursor-pointer"
+                            className="border border-white/80 text-white text-xs sm:text-base font-semibold px-4 py-2 sm:px-7 sm:py-3 rounded-full hover:bg-white hover:text-gray-950 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 backdrop-blur-xs whitespace-nowrap cursor-pointer"
                         >
                             Become a Wholesale Partner
                         </a>
@@ -60,7 +61,11 @@ export default async function HomePage() {
             </section>
 
             {/* ── Our Collections ──────────────────────────────────── */}
-            <HomeCollections products={products} showSocialVideoLinks={settings?.showSocialVideoLinks ?? true} />
+            <HomeCollections
+                products={products}
+                categories={categories}
+                showSocialVideoLinks={settings?.showSocialVideoLinks ?? true}
+            />
 
             {/* ── Features ─────────────────────────────────────────── */}
             <section className="bg-gray-50 py-14 mt-auto">
